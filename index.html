@@ -3,18 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tes Koran Minimalis</title>
+    <title>Tes Koran - Garis Grafik Asli</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
         
         :root {
-            --bg-color: #0e1015;
-            --surface: #1c1f26;
-            --text-main: #ededed;
-            --text-muted: #8b949e;
-            --border: #30363d;
-            --accent: #58a6ff;
+            --bg-color: #fcfcfc;
+            --surface: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --accent: #1d4ed8; /* Biru pulpen */
+            --success: #16a34a;
+            --danger: #dc2626;
+            --gold: #d97706;
         }
 
         body {
@@ -33,46 +36,61 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 40px;
-            border-bottom: 1px solid var(--border);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--text-main);
             background-color: var(--bg-color);
             z-index: 10;
         }
 
-        .stats { display: flex; gap: 30px; font-size: 14px; }
+        .stats { display: flex; gap: 20px; font-size: 14px; }
         .stat-box { display: flex; flex-direction: column; }
-        .stat-label { color: var(--text-muted); font-size: 12px; margin-bottom: 4px; }
-        .stat-value { font-weight: 600; font-size: 18px; }
+        .stat-label { color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 2px; }
+        .stat-value { font-weight: 600; font-size: 16px; }
 
         button {
             background-color: var(--text-main);
             color: var(--bg-color);
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 8px 16px;
+            border-radius: 4px;
             font-weight: 600;
+            font-size: 14px;
             cursor: pointer;
             transition: opacity 0.2s;
         }
         button:hover { opacity: 0.8; }
         button:disabled { background-color: var(--border); color: var(--text-muted); cursor: not-allowed; }
 
-        .btn-danger { background-color: #f85149; color: white; }
+        /* WADAH UTAMA + CANVAS GARIS */
+        #board-wrapper {
+            position: relative;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #line-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none; /* Biar gak ganggu klik */
+            z-index: 5;
+        }
 
         #board-container {
-            flex: 1;
+            width: 100%;
+            height: 100%;
             overflow-x: auto;
-            overflow-y: hidden;
-            padding: 40px;
+            overflow-y: auto;
+            padding: 20px 20px 50vh 20px; 
             display: flex;
-            gap: 40px;
+            gap: 25px;
             scroll-behavior: smooth;
+            box-sizing: border-box;
         }
 
         .column {
             display: flex;
             flex-direction: column;
-            align-items: center;
             opacity: 0.3;
             pointer-events: none;
             transition: opacity 0.3s;
@@ -80,34 +98,84 @@
 
         .column.active, .column.done { opacity: 1; pointer-events: auto; }
 
-        .item-group { display: flex; flex-direction: column; align-items: center; margin-bottom: 8px; }
-
-        .number { font-size: 24px; font-weight: 600; height: 30px; display: flex; align-items: center; justify-content: center; }
-
-        .input-box {
-            width: 30px; height: 30px;
-            background: transparent; border: 1px solid transparent;
-            border-bottom: 2px solid var(--border);
-            color: var(--accent); font-size: 20px; font-weight: 600;
-            text-align: center; outline: none; transition: border-color 0.2s;
+        .cell {
+            position: relative;
+            height: 22px;
+            display: flex;
+            justify-content: center;
+            width: 14px;
         }
 
-        .input-box:focus { border-bottom-color: var(--accent); }
+        .number {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 22px;
+            color: #000;
+        }
+
+        .input-box {
+            position: absolute;
+            top: 11px;
+            left: 100%; 
+            margin-left: 2px;
+            width: 20px; 
+            height: 20px;
+            background: transparent; 
+            border: none;
+            color: var(--accent);
+            font-size: 14px; 
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            text-align: left; 
+            outline: none; 
+            padding: 0;
+            caret-color: var(--accent);
+        }
+
+        .input-box:focus { border-bottom: 1px solid rgba(29, 78, 216, 0.3); }
         .input-box:disabled { color: var(--text-muted); }
 
         #results {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: var(--surface); padding: 30px; border-radius: 12px;
-            border: 1px solid var(--border); text-align: center; display: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-            width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto;
+            background: var(--surface); padding: 25px; border-radius: 8px;
+            border: 2px solid var(--text-main); text-align: center; display: none;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.15);
+            width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto;
+            z-index: 20;
         }
 
-        #results h2 { margin-top: 0; margin-bottom: 20px; }
-        .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        .chart-container { width: 100%; height: 250px; margin-bottom: 20px; }
-        .action-buttons { display: flex; gap: 10px; }
-        .action-buttons button { flex: 1; }
+        #results h2 { margin-top: 0; margin-bottom: 15px; color: var(--text-main); font-weight: 700; font-size: 20px; text-transform: uppercase;}
+        .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        
+        .leaderboard {
+            background: var(--bg-color);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px dashed var(--border);
+        }
+        .leaderboard h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px; }
+        .rank-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px solid #f3f4f6; }
+        .rank-row:last-child { border-bottom: none; }
+        .rank-num { color: var(--text-muted); width: 25px; text-align: left; }
+        .rank-name { flex: 1; text-align: left; font-weight: 600; }
+        .rank-score { color: var(--success); font-weight: 600; text-align: right; }
+
+        #name-input-section {
+            background: rgba(217, 119, 6, 0.1);
+            padding: 15px; border-radius: 6px; border: 1px solid var(--gold);
+            margin-bottom: 20px; display: none;
+        }
+        #name-input-section p { margin: 0 0 10px 0; font-size: 12px; color: var(--gold); font-weight: 600; }
+        #player-name {
+            background: #fff; color: var(--text-main); font-size: 14px;
+            border: 1px solid var(--border); padding: 8px; border-radius: 4px;
+            width: 60%; outline: none; font-family: 'Inter', sans-serif;
+        }
+        #player-name:focus { border-color: var(--gold); }
+        #save-score-btn { background: var(--gold); color: #fff; padding: 8px 15px; }
+
+        .chart-container { width: 100%; height: 160px; margin-bottom: 15px; }
 
     </style>
 </head>
@@ -115,55 +183,71 @@
 
     <header>
         <div>
-            <h2 style="margin:0; font-size: 18px;">Tes Koran</h2>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Riwayat Progres Sesi</div>
+            <h2 style="margin:0; font-size: 16px; font-weight: 700; text-transform: uppercase;">Tes Pauli</h2>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Simulasi Garis Asli</div>
         </div>
         <div class="stats">
             <div class="stat-box">
-                <span class="stat-label">Sisa Waktu</span>
+                <span class="stat-label">Waktu</span>
                 <span class="stat-value" id="time-display">02:00</span>
             </div>
             <div class="stat-box">
-                <span class="stat-label">Kolom Aktif</span>
+                <span class="stat-label">Kolom</span>
                 <span class="stat-value" id="col-display">0</span>
             </div>
         </div>
-        <button id="start-btn" onclick="startTest()">Mulai Tes</button>
+        <button id="start-btn" onclick="startTest()">Mulai</button>
     </header>
 
-    <div id="board-container"></div>
+    <div id="board-wrapper">
+        <canvas id="line-canvas"></canvas>
+        <div id="board-container"></div>
+    </div>
 
     <div id="results">
-        <h2>Tes Selesai!</h2>
+        <h2>WAKTU HABIS!</h2>
+        
         <div class="result-grid">
             <div class="stat-box">
-                <span class="stat-label">Total Benar (Sesi Ini)</span>
-                <span class="stat-value" id="res-correct" style="color: #3fb950;">0</span>
+                <span class="stat-label">Jawaban Benar</span>
+                <span class="stat-value" id="res-correct" style="color: var(--success);">0</span>
             </div>
             <div class="stat-box">
-                <span class="stat-label">Total Salah</span>
-                <span class="stat-value" id="res-wrong" style="color: #f85149;">0</span>
+                <span class="stat-label">Jawaban Salah</span>
+                <span class="stat-value" id="res-wrong" style="color: var(--danger);">0</span>
+            </div>
+        </div>
+
+        <div id="name-input-section">
+            <p>🔥 MASUK TOP 5! Masukkan Namamu:</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <input type="text" id="player-name" placeholder="Inisial" maxlength="10">
+                <button id="save-score-btn" onclick="saveHighScore()">Simpan</button>
+            </div>
+        </div>
+
+        <div class="leaderboard">
+            <h3>Top 5 High Scores</h3>
+            <div id="leaderboard-list">
+                <div style="color:var(--text-muted); font-size:12px; padding: 10px 0;">Memuat klasemen...</div>
             </div>
         </div>
         
-        <div style="text-align: left; margin-bottom: 10px; font-size: 14px; font-weight: bold; color: var(--text-muted);">
-            Grafik Peningkatan Skor Anda:
-        </div>
+        <div style="text-align: left; font-size: 10px; color: var(--text-muted); font-weight:600; text-transform:uppercase;">Grafik Progres:</div>
         <div class="chart-container">
             <canvas id="historyChart"></canvas>
         </div>
 
-        <div class="action-buttons">
-            <button class="btn-danger" onclick="clearHistory()">Hapus Riwayat</button>
-            <button onclick="location.reload()">Mulai Tes Baru</button>
-        </div>
+        <button onclick="location.reload()" style="width: 100%;">Main Lagi</button>
     </div>
 
     <script>
-        const TOTAL_COLUMNS = 20;
-        const NUMS_PER_COL = 15;
-        const TEST_DURATION = 120; 
-        const INTERVAL_TIME = 15; 
+        const API_URL = 'https://script.google.com/macros/s/AKfycbyu1cSFI_8hCIy3GhAzyrzA5IV9rim9Dc3eFumlEYkbME9CFRqC46HLtH2Isachf3Ej/exec';
+        
+        const TOTAL_COLUMNS = 20; 
+        const NUMS_PER_COL = 35; 
+        const TEST_DURATION = 120; // 2 Menit
+        const INTERVAL_TIME = 15; // Pindah kolom tiap 15 detik
 
         let timer;
         let intervalTimer;
@@ -172,30 +256,37 @@
         let correctAnswers = 0;
         let wrongAnswers = 0;
         let isPlaying = false;
+        let globalLeaderboard = [];
+        
+        // Menyimpan koordinat jawaban terakhir di setiap kolom untuk penarikan garis
+        let lastAnswerPoints = [];
 
         const board = document.getElementById('board-container');
 
         function initBoard() {
+            board.innerHTML = ''; 
             for (let c = 0; c < TOTAL_COLUMNS; c++) {
                 const colDiv = document.createElement('div');
                 colDiv.className = 'column';
                 colDiv.id = `col-${c}`;
                 
-                let prevNum = Math.floor(Math.random() * 10);
+                let numbers = [];
+                for(let i=0; i <= NUMS_PER_COL; i++) {
+                    numbers.push(Math.floor(Math.random() * 10));
+                }
                 
                 for (let r = 0; r < NUMS_PER_COL; r++) {
-                    const nextNum = Math.floor(Math.random() * 10);
-                    const expectedAns = (prevNum + nextNum) % 10;
+                    const topNum = numbers[r];
+                    const bottomNum = numbers[r+1];
+                    const expectedAns = (topNum + bottomNum) % 10;
                     
-                    const group = document.createElement('div');
-                    group.className = 'item-group';
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
                     
-                    if (r === 0) {
-                        const topDiv = document.createElement('div');
-                        topDiv.className = 'number';
-                        topDiv.innerText = prevNum;
-                        group.appendChild(topDiv);
-                    }
+                    const numDiv = document.createElement('div');
+                    numDiv.className = 'number';
+                    numDiv.innerText = topNum;
+                    cell.appendChild(numDiv);
 
                     const input = document.createElement('input');
                     input.className = 'input-box';
@@ -221,20 +312,25 @@
                         const nextRow = r + 1;
                         if (nextRow < NUMS_PER_COL) {
                             const nextInput = document.querySelector(`input[data-col="${c}"][data-row="${nextRow}"]`);
-                            if(nextInput) nextInput.focus();
+                            if(nextInput) {
+                                nextInput.focus();
+                                nextInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
                         }
                     });
 
-                    const bottomDiv = document.createElement('div');
-                    bottomDiv.className = 'number';
-                    bottomDiv.innerText = nextNum;
-                    
-                    group.appendChild(input);
-                    group.appendChild(bottomDiv);
-                    colDiv.appendChild(group);
-
-                    prevNum = nextNum;
+                    cell.appendChild(input);
+                    colDiv.appendChild(cell);
                 }
+                
+                const lastCell = document.createElement('div');
+                lastCell.className = 'cell';
+                const lastNumDiv = document.createElement('div');
+                lastNumDiv.className = 'number';
+                lastNumDiv.innerText = numbers[NUMS_PER_COL];
+                lastCell.appendChild(lastNumDiv);
+                colDiv.appendChild(lastCell);
+
                 board.appendChild(colDiv);
             }
         }
@@ -252,13 +348,16 @@
             
             activateColumn(0);
 
+            // Timer Utama
             timer = setInterval(() => {
                 timeLeft--;
                 document.getElementById('time-display').innerText = formatTime(timeLeft);
                 if (timeLeft <= 0) endGame();
             }, 1000);
 
+            // Timer Interval (Pindah kolom otomatis tiap 15 detik)
             intervalTimer = setInterval(() => {
+                recordLastPoint(activeCol); // Catat posisi terakhir
                 activeCol++;
                 if (activeCol < TOTAL_COLUMNS) {
                     activateColumn(activeCol);
@@ -266,6 +365,32 @@
                     endGame();
                 }
             }, INTERVAL_TIME * 1000);
+        }
+
+        function recordLastPoint(colIndex) {
+            const currentCol = document.getElementById(`col-${colIndex}`);
+            const inputs = currentCol.querySelectorAll('input');
+            let lastFilledInput = null;
+
+            // Cari input terakhir yang terisi
+            for (let i = inputs.length - 1; i >= 0; i--) {
+                if (inputs[i].value !== '') {
+                    lastFilledInput = inputs[i];
+                    break;
+                }
+            }
+            
+            // Jika tidak ada yang diisi, ambil input paling atas
+            if (!lastFilledInput) lastFilledInput = inputs[0];
+
+            const rect = lastFilledInput.getBoundingClientRect();
+            const wrapperRect = document.getElementById('board-wrapper').getBoundingClientRect();
+
+            // Simpan koordinat x, y relatif terhadap wrapper
+            lastAnswerPoints.push({
+                x: rect.left - wrapperRect.left + (rect.width / 2),
+                y: rect.top - wrapperRect.top + (rect.height / 2)
+            });
         }
 
         function activateColumn(colIndex) {
@@ -286,84 +411,187 @@
             
             setTimeout(() => {
                 inputs[0].focus();
-                current.scrollIntoView({ behavior: 'smooth', inline: 'center' });
-            }, 100);
+                document.getElementById('board-container').scrollTo({ top: 0, behavior: 'smooth' });
+            }, 50);
         }
 
         function endGame() {
             clearInterval(timer);
             clearInterval(intervalTimer);
-            isPlaying = false;
             
-            document.querySelectorAll('input').forEach(inp => inp.disabled = true);
-            document.getElementById('board-container').style.opacity = '0.1';
-            
-            const res = document.getElementById('results');
-            res.style.display = 'block';
-            document.getElementById('res-correct').innerText = correctAnswers;
-            document.getElementById('res-wrong').innerText = wrongAnswers;
+            if (isPlaying) {
+                recordLastPoint(activeCol); // Catat poin kolom terakhir
+                isPlaying = false;
+            }
 
-            // Simpan skor ke Local Storage browser
-            saveAndRenderHistory();
+            document.querySelectorAll('input').forEach(inp => inp.disabled = true);
+            
+            // Gambar garis zigzag khas tes koran
+            drawZigZagLine();
+
+            setTimeout(() => {
+                const res = document.getElementById('results');
+                res.style.display = 'block';
+                document.getElementById('res-correct').innerText = correctAnswers;
+                document.getElementById('res-wrong').innerText = wrongAnswers;
+
+                processScores();
+            }, 800); // Tunda sedikit agar pemain sempat melihat garisnya
         }
 
-        function saveAndRenderHistory() {
-            // Ambil riwayat sebelumnya (jika ada)
+        // FUNGSI MENGGAMBAR GARIS ZIGZAG DI ATAS KERTAS
+        function drawZigZagLine() {
+            const canvas = document.getElementById('line-canvas');
+            const wrapper = document.getElementById('board-wrapper');
+            
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (lastAnswerPoints.length < 2) return;
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#1d4ed8'; // Warna tinta pulpen biru
+            ctx.lineWidth = 2.5;
+            ctx.lineJoin = 'round';
+
+            ctx.moveTo(lastAnswerPoints[0].x, lastAnswerPoints[0].y);
+            for (let i = 1; i < lastAnswerPoints.length; i++) {
+                ctx.lineTo(lastAnswerPoints[i].x, lastAnswerPoints[i].y);
+            }
+            ctx.stroke();
+        }
+
+        async function processScores() {
             let history = JSON.parse(localStorage.getItem('tesKoranHistory')) || [];
-            
-            // Masukkan skor sesi ini ke riwayat
             history.push(correctAnswers);
-            
-            // Simpan kembali ke Local Storage
             localStorage.setItem('tesKoranHistory', JSON.stringify(history));
+            renderChart(history);
 
-            // Gambar Grafik
-            const ctx = document.getElementById('historyChart').getContext('2d');
-            const labels = history.map((_, i) => `Tes ${i + 1}`);
+            await fetchLeaderboard();
 
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Skor (Jawaban Benar)',
-                        data: history,
-                        borderColor: '#3fb950',
-                        backgroundColor: 'rgba(63, 185, 80, 0.2)',
-                        borderWidth: 2,
-                        pointBackgroundColor: '#3fb950',
-                        pointBorderColor: '#fff',
-                        pointRadius: 5,
-                        fill: true,
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { color: '#8b949e', stepSize: 5 },
-                            grid: { color: '#30363d' }
-                        },
-                        x: {
-                            ticks: { color: '#8b949e' },
-                            grid: { color: 'transparent' }
-                        }
-                    },
-                    plugins: {
-                        legend: { labels: { color: '#ededed' } }
-                    }
-                }
+            const isHighScore = globalLeaderboard.length < 5 || correctAnswers > (globalLeaderboard[globalLeaderboard.length - 1]?.skor || 0);
+
+            if (correctAnswers > 0 && isHighScore) {
+                document.getElementById('name-input-section').style.display = 'block';
+                document.getElementById('player-name').focus();
+            }
+        }
+
+        async function fetchLeaderboard() {
+            const listDiv = document.getElementById('leaderboard-list');
+            try {
+                const response = await fetch(API_URL);
+                globalLeaderboard = await response.json();
+                renderLeaderboardUI(globalLeaderboard);
+            } catch (error) {
+                listDiv.innerHTML = '<div style="color:var(--danger); font-size:12px; padding: 10px 0;">Gagal terhubung ke server skor.</div>';
+            }
+        }
+
+        async function saveHighScore() {
+            const nameInput = document.getElementById('player-name').value.trim() || 'Anonim';
+            const btn = document.getElementById('save-score-btn');
+            
+            btn.disabled = true;
+            btn.innerText = 'Menyimpan...';
+
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ nama: nameInput, skor: correctAnswers })
+                });
+                
+                document.getElementById('name-input-section').style.display = 'none';
+                listDiv = document.getElementById('leaderboard-list');
+                listDiv.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding: 10px 0;">Memperbarui klasemen...</div>';
+                
+                await fetchLeaderboard();
+            } catch (error) {
+                alert('Koneksi terputus. Gagal menyimpan skor.');
+                btn.disabled = false;
+                btn.innerText = 'Simpan';
+            }
+        }
+
+        function renderLeaderboardUI(data) {
+            const listDiv = document.getElementById('leaderboard-list');
+            listDiv.innerHTML = '';
+
+            if (data.length === 0) {
+                listDiv.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding: 10px 0;">Belum ada rekor. Jadilah yang pertama!</div>';
+                return;
+            }
+
+            data.forEach((item, index) => {
+                listDiv.innerHTML += `
+                    <div class="rank-row">
+                        <span class="rank-num">#${index + 1}</span>
+                        <span class="rank-name">${item.nama}</span>
+                        <span class="rank-score">${item.skor} pts</span>
+                    </div>
+                `;
             });
         }
 
-        function clearHistory() {
-            if(confirm("Apakah Anda yakin ingin menghapus semua riwayat tes?")) {
-                localStorage.removeItem('tesKoranHistory');
-                location.reload();
-            }
+        function renderChart(history) {
+            const ctx = document.getElementById('historyChart').getContext('2d');
+            const labels = history.map((_, i) => `T${i + 1}`);
+
+            const showValuesPlugin = {
+                id: 'showValues',
+                afterDatasetsDraw(chart) {
+                    const { ctx, data } = chart;
+                    ctx.save();
+                    ctx.font = 'bold 10px Inter, sans-serif';
+                    ctx.fillStyle = '#111827'; 
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    
+                    chart.getDatasetMeta(0).data.forEach((datapoint, index) => {
+                        const value = data.datasets[0].data[index];
+                        ctx.fillText(value, datapoint.x, datapoint.y - 4);
+                    });
+                    ctx.restore();
+                }
+            };
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Skor Saya',
+                        data: history,
+                        backgroundColor: '#16a34a', 
+                        borderColor: '#15803d',
+                        borderWidth: 1,
+                        borderRadius: 2 
+                    }]
+                },
+                options: {
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 15 } },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            ticks: { color: '#6b7280', stepSize: 5 }, 
+                            grid: { color: '#e5e7eb' },
+                            suggestedMax: Math.max(...history, 10) + 10 
+                        },
+                        x: { ticks: { color: '#6b7280' }, grid: { display: false } }
+                    },
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: { enabled: false } 
+                    }
+                },
+                plugins: [showValuesPlugin] 
+            });
         }
 
         initBoard();
